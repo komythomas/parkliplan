@@ -1,10 +1,14 @@
 # Autonomous Striping Robotics — GeoJSON Ingestion Specification
 
+> **Hypothetical design notes.** This document describes a plausible GeoJSON ingestion pipeline for an autonomous pavement-marking robot and is intended to illustrate how Parkliplan exports could be consumed by such a system. It is not based on internal documentation from 10Lines OÜ or any other company, and it does not describe the actual behaviour of any real product.
+
+---
+
 ## 1. Overview & Operational Context
 
-Autonomous pavement marking robots (such as the **10Lines C-series**) execute line striping by converting vector plans into localized physical trajectory waypoints. The robot relies on RTK-GNSS (Real-Time Kinematic GNSS) centimeter-level positioning, IMUs, and wheel encoders to track designed paths.
+Autonomous pavement marking robots execute line striping by converting vector plans into localized physical trajectory waypoints. A typical system relies on RTK-GNSS centimeter-level positioning, IMUs, and wheel encoders to follow designed paths.
 
-**Parkliplan** outputs standardized **RFC 7946 GeoJSON FeatureCollections** tailored directly for autonomous mission planning software. This document formalizes the data contract between Parkliplan exports and robotic vehicle control systems.
+**Parkliplan** outputs standardized **RFC 7946 GeoJSON FeatureCollections** suited for autonomous mission planning software. This document describes a hypothetical data contract between Parkliplan exports and a robotic vehicle control system.
 
 ---
 
@@ -12,9 +16,9 @@ Autonomous pavement marking robots (such as the **10Lines C-series**) execute li
 
 | Parameter | Specification | Engineering Requirement |
 |:---|:---|:---|
-| **Coordinate Reference System (CRS)** | **EPSG:4326 (WGS84)** | Standard ellipsoidal geographic coordinates. |
+| **Coordinate Reference System (CRS)** | **EPSG:4326 (WGS84)** | Standard geographic coordinates. |
 | **Coordinate Axis Ordering** | `[longitude, latitude]` | Strict RFC 7946 compliance (Easting before Northing). |
-| **Decimal Precision** | **7 decimal places** | Resolves to $\approx 1.1\text{ cm}$ at $59.4^\circ\text{ N}$, matching RTK-GNSS precision. |
+| **Decimal Precision** | **7 decimal places** | Resolves to $\approx 1.1\text{ cm}$ at $59.4^\circ\text{ N}$, consistent with RTK-GNSS precision. |
 | **Elevation / Altitude** | Omitted (2D Planar) | Assumed local asphalt surface tangent plane. |
 | **Topology Tolerance** | $\le 12\text{ px}$ capture | Snapped vertices share exact identical coordinate tuples. |
 
@@ -30,7 +34,7 @@ Each geometric element exported from Parkliplan carries operational metadata in 
 interface RoboticFeatureProperties {
   id: string;             // Unique identifier (e.g., "line-1728145920123")
   type: 'LineString' | 'Polygon';
-  length_m: number;       // Ground-truth WGS84 geodesic length in meters
+  length_m: number;       // Ground-truth spherical geodesic length in meters
   label: string;          // Operator designation (e.g., "Stall Line #4")
   plan_name: string;      // Site layout identifier
   stroke_width_cm?: number; // Optional spray nozzle width (default: 10.0 cm)
@@ -43,8 +47,8 @@ interface RoboticFeatureProperties {
    - Represents physical paint markings: stall dividers, perimeter lines, lane markers, and directional markings.
    - Vertices define the centerline of the paint nozzle trajectory.
 2. **`Polygon` (Zoned Regions & Hatched Areas)**:
-   - Demarcates safety buffers, pedestrian aisles, handicapped zones, and EV charging bays.
-   - Robotic trajectory planners parse polygons into infill raster/hatching patterns.
+   - Demarcates safety buffers, pedestrian aisles, accessible spaces, and EV charging bays.
+   - Robotic trajectory planners could parse polygons into infill raster/hatching patterns.
 
 ---
 
@@ -102,39 +106,32 @@ interface RoboticFeatureProperties {
 
 ---
 
-## 5. Robotic Trajectory Generation Pipeline
+## 5. Hypothetical Trajectory Generation Pipeline
 
-Autonomous striping robots process Parkliplan GeoJSON through the following sequential pipeline:
+The following pipeline illustrates how a robot might consume Parkliplan GeoJSON. Implementation details would vary by platform.
 
 ```
 [Parkliplan GeoJSON (WGS84)]
             │
             ▼
-[RTK-GNSS Local Frame Projection (ENU / Tangent Plane)]
+[Local Frame Projection (ENU / Tangent Plane)]
             │
             ▼
-[Toolpath Optimization & Turn Smoothing (Dubins / Reeds-Shepp Paths)]
+[Toolpath Optimization & Turn Smoothing]
             │
             ▼
-[Nozzle Actuation Control (Speed-Proportional Paint Valve)]
+[Nozzle Actuation Control]
             │
             ▼
-[Closed-Loop Odometry Verification (Dead-Reckoning vs length_m)]
+[Odometry Verification vs length_m]
 ```
 
-### 1. Local Frame Projection (ENU)
-The robot's base station establishes a local **East-North-Up (ENU)** Cartesian coordinate frame at reference origin $(\phi_0, \lambda_0)$. Incoming GeoJSON coordinates $(\phi, \lambda)$ are converted via standard geodetic transformation:
+### Local Frame Projection (ENU)
+
+A base station could establish a local **East-North-Up (ENU)** Cartesian coordinate frame at reference origin $(\phi_0, \lambda_0)$. Incoming GeoJSON coordinates $(\phi, \lambda)$ would be converted via:
 
 $$x = R \cdot (\lambda - \lambda_0) \cdot \cos(\phi_0)$$
 $$y = R \cdot (\phi - \phi_0)$$
-
-### 2. Path Generation & Nozzle Synchronization
-- **Waypoints**: Centerline coordinates provide the steering targets for autonomous path-following algorithms (Pure Pursuit or Model Predictive Control).
-- **Actuation**: The paint nozzle opens upon reaching coordinate $P_0$ (within $\pm 2.0\text{ cm}$ positional tolerance) and shuts off at $P_N$.
-- **Speed-Proportional Dispensing**: Paint pump flow is automatically throttled relative to wheel speed ($v_{\text{robot}}$) to guarantee uniform dry film thickness (DFT).
-
-### 3. Verification & Odometry Cross-Check
-The `length_m` property is stored in mission telemetry logs. As the robot marks each segment, measured wheel odometry is cross-verified against the pre-computed geodesic length to detect wheel slip or paint exhaustion.
 
 ---
 

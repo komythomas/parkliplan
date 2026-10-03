@@ -15,7 +15,7 @@
 
 | Service | URL |
 |:---|:---|
-| **Frontend (Vercel)** | Deploy via the [Vercel guide](#deploy-to-vercel) below |
+| **Frontend (Vercel)** | [https://frontend-pied-iota-98.vercel.app](https://frontend-pied-iota-98.vercel.app) |
 | **Backend API (Fly.io)** | [https://parkliplan-api.fly.dev](https://parkliplan-api.fly.dev) |
 | **Interactive API Docs (Swagger)** | [https://parkliplan-api.fly.dev/docs](https://parkliplan-api.fly.dev/docs) |
 | **API Health** | [https://parkliplan-api.fly.dev/health](https://parkliplan-api.fly.dev/health) |
@@ -54,7 +54,7 @@ Autonomous pavement striping robots (such as those pioneered by **10Lines OÜ**)
 
 - **Dual-Layer Basemap Synchronization**: Instant, zero-reload switching between sub-meter resolution **Esri World Imagery** and cartographic **OpenStreetMap**, allowing operators to match layout boundaries directly with asphalt joints and curbs.
 - **Topological Snapping & Editing**: Interactive vector drawing with a calibrated **12-pixel magnetic capture radius** (`ol/interaction/Snap`) for vertices and edges, accompanied by vertex manipulation (`ol/interaction/Modify`) and interactive deletion.
-- **WGS84 Geodesic Metrology**: Pavement distances are computed over the **WGS84 Earth ellipsoid** (`ol/sphere.getLength`), canceling out Web Mercator projection distortion ($\approx 1.96\times$ distance exaggeration at northern latitudes such as Tallinn, Estonia at 59.4° N).
+- **Spherical Geodesic Metrology**: Pavement distances are computed via great-circle integration on a sphere (`ol/sphere.getLength`), canceling out Web Mercator projection distortion ($\approx 1.97\times$ distance exaggeration at northern latitudes such as Tallinn, Estonia at 59.4° N). The deviation from a rigorous WGS84 ellipsoidal calculation is less than 0.5 % for the segment lengths encountered in parking-lot planning — well within the accuracy limits of clicking on satellite imagery (typically ±20–50 cm).
 - **4 Marking Types with Color Coding**:
   - White — Standard stall lines
   - Blue — Accessible (PMR) spaces
@@ -82,11 +82,11 @@ Where:
 
 At the latitude of Tallinn, Estonia ($\phi \approx 59.437^\circ\text{ N}$):
 
-$$k = \frac{1}{\cos(59.437^\circ)} \approx 1.964$$
+$$k = \frac{1}{\cos(59.437^\circ)} \approx 1.967$$
 
-A standard 5.0-meter parking stall line naively measured in Cartesian Web Mercator coordinates results in $\approx 9.82$ units—an error of **+96.4%**.
+A standard 5.0-meter parking stall line naively measured in Cartesian Web Mercator coordinates results in $\approx 9.83$ units—an error of **+96.7%**.
 
-Parkliplan mitigates this distortion entirely by calculating all lengths and perimeters via great-circle ellipsoidal integration (`ol/sphere.getLength`), providing sub-centimeter physical accuracy required for autonomous vehicle navigation.
+Parkliplan eliminates this distortion by calculating all lengths via spherical great-circle integration (`ol/sphere.getLength`). The spherical model deviates from the WGS84 ellipsoid by less than 0.5 % for the short segments typical in parking-lot planning — well within the accuracy limits of clicking on satellite imagery (typically ±20–50 cm depending on zoom level).
 
 ---
 
@@ -221,7 +221,7 @@ Browser
 Detailed technical design notes and data contracts are documented in the [`docs/`](docs/) directory:
 
 - [**`docs/GEODESICS.md`**](docs/GEODESICS.md): In-depth physical derivation of Web Mercator distortion ($k = \sec\phi$), comparison table across European/Nordic latitudes, and WGS84 great-circle spherical integration implementation.
-- [**`docs/ROBOTIC_SPEC.md`**](docs/ROBOTIC_SPEC.md): Autonomous striping robot trajectory planning specification, RFC 7946 GeoJSON schema, RTK-GNSS local frame projection (ENU), and nozzle synchronization protocols.
+- [**`docs/ROBOTIC_SPEC.md`**](docs/ROBOTIC_SPEC.md): Hypothetical design notes describing how Parkliplan GeoJSON exports could be consumed by an autonomous striping robot — RFC 7946 schema, ENU local frame projection, and trajectory generation pipeline. Not based on internal documentation from any company.
 - [**`docs/screenshots/`**](docs/screenshots/): Full-resolution visual test scans of the live interface and metrology readouts.
 
 ---
@@ -245,7 +245,7 @@ npm test
 
 ```bash
 cd backend
-py -m pytest
+python -m pytest
 ```
 
 - **Healthcheck**: Confirms service readiness and JSON payload schema.
@@ -283,6 +283,6 @@ Full interactive documentation: [https://parkliplan-api.fly.dev/docs](https://pa
 - **OpenStreetMap**: © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors.
 
 ### Trademark & Fair Use Notice
-- **10Lines** is a registered trademark of 10Lines OÜ. All product names, trademarks, and registered trademarks cited in this repository are the property of their respective owners.
-- Parkliplan is an independent technical demonstration and portfolio project developed by [@komythomas](https://github.com/komythomas) to demonstrate web-GIS spatial planning, geodesic calculation engines, and autonomous striping path generation.
+- **10Lines** is the name of a company (10Lines OÜ). All company names and product names cited in this repository are the property of their respective owners.
+- Parkliplan is an independent technical demonstration and portfolio project developed by [@komythomas](https://github.com/komythomas) to demonstrate web-GIS spatial planning, spherical geodesic calculation, and autonomous striping path generation.
 - This software is not an official product of, nor is it endorsed by, affiliated with, or sponsored by 10Lines OÜ or the Norway Grants Green ICT programme.
