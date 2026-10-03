@@ -18,10 +18,11 @@ import {
   Check,
 } from 'lucide-react';
 import { usePlanner } from '../context/PlannerContext';
-import { DrawingTool } from '../types/planner';
+import { DrawingTool, MARKING_CONFIGS, MarkingType } from '../types/planner';
 import { exportGeoJSON, exportCSV, generateGeoJSONString } from '../utils/export';
 import { savePlanToBackend } from '../utils/api';
 import { LoadPlanModal } from './LoadPlanModal';
+import { LocationSearch } from './LocationSearch';
 
 export const Toolbar: React.FC = () => {
   const {
@@ -29,6 +30,9 @@ export const Toolbar: React.FC = () => {
     setBasemap,
     activeTool,
     setActiveTool,
+    markingType,
+    setMarkingType,
+    costPerMeter,
     planName,
     setPlanName,
     features,
@@ -88,9 +92,9 @@ export const Toolbar: React.FC = () => {
       showNotice('Draw at least one element before exporting.');
       return;
     }
-    const success = exportCSV(features, totalLengthMeters, planName);
+    const success = exportCSV(features, totalLengthMeters, planName, costPerMeter);
     if (success) {
-      showNotice('CSV exported');
+      showNotice('CSV exported with cost estimates');
     }
   };
 
@@ -107,9 +111,11 @@ export const Toolbar: React.FC = () => {
     { id: 'delete', label: 'Delete', icon: <Trash2 size={14} />, shortcut: 'D' },
   ];
 
+  const markingTypesList: MarkingType[] = ['standard', 'prm', 'safety', 'ev'];
+
   return (
     <header className="pro-header">
-      {/* Left: Brand & File Name */}
+      {/* Left: Brand, Plan Name & Location Search */}
       <div className="header-zone-left">
         <div className="brand-badge">
           <span className="brand-name">Parkliplan</span>
@@ -152,9 +158,14 @@ export const Toolbar: React.FC = () => {
             </button>
           )}
         </div>
+
+        <div className="header-divider" />
+
+        {/* Location Search Bar (Feature B) */}
+        <LocationSearch />
       </div>
 
-      {/* Center: Basemap & Drawing Tools */}
+      {/* Center: Basemap, Tools & Marking Color Swatches */}
       <div className="header-zone-center">
         {/* Basemap Switcher */}
         <div className="segmented-group" role="group" aria-label="Basemap">
@@ -180,7 +191,7 @@ export const Toolbar: React.FC = () => {
 
         <div className="header-divider" />
 
-        {/* Vector Tools */}
+        {/* Vector Drawing Toolset */}
         <div className="tools-segmented" role="toolbar" aria-label="Drawing Tools">
           {tools.map((tool) => {
             const isActive = activeTool === tool.id;
@@ -202,7 +213,34 @@ export const Toolbar: React.FC = () => {
 
         <div className="header-divider" />
 
-        {/* Magnetic Snap Status */}
+        {/* Marking Color / Type Selector (Feature A) */}
+        <div className="marking-type-selector" role="group" aria-label="Marking Color and Classification">
+          {markingTypesList.map((typeKey) => {
+            const config = MARKING_CONFIGS[typeKey];
+            const isSelected = markingType === typeKey;
+
+            return (
+              <button
+                key={typeKey}
+                type="button"
+                onClick={() => setMarkingType(typeKey)}
+                className={`marking-type-btn ${isSelected ? 'active' : ''}`}
+                title={`${config.label} — ${config.description}`}
+                aria-pressed={isSelected}
+              >
+                <span
+                  className="marking-color-dot"
+                  style={{ backgroundColor: config.color }}
+                />
+                <span className="marking-label">{config.badgeLabel}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="header-divider" />
+
+        {/* Magnetic Snapping Status */}
         <div className="snap-indicator" title="Magnetic snapping active (12px)">
           <span>Snap 12px</span>
         </div>

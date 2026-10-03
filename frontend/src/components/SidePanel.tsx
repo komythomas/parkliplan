@@ -8,10 +8,12 @@ import {
   Download,
   FileSpreadsheet,
   X,
+  Euro,
 } from 'lucide-react';
 import { usePlanner } from '../context/PlannerContext';
 import { formatMeters } from '../utils/metrics';
 import { exportGeoJSON, exportCSV } from '../utils/export';
+import { MARKING_CONFIGS } from '../types/planner';
 
 type LineWidthOption = 0.10 | 0.12 | 0.15; // in meters (10cm, 12cm, 15cm)
 
@@ -24,6 +26,8 @@ export const SidePanel: React.FC = () => {
     deleteFeature,
     planName,
     vectorSourceRef,
+    costPerMeter,
+    setCostPerMeter,
     isSidePanelOpen,
     toggleSidePanel,
   } = usePlanner();
@@ -36,17 +40,13 @@ export const SidePanel: React.FC = () => {
   const zoneCount = features.filter((f) => f.type === 'Polygon').length;
 
   // Real pavement marking physical estimates:
-  // Surface Area (m²) = Length (m) * Width (m)
   const surfaceAreaSqM = totalLengthMeters * lineWidth;
-
-  // Traffic paint: ~0.20 L/m² standard application rate
   const paintLiters = surfaceAreaSqM * 0.20;
-
-  // Reflective glass beads: ~300 g/m² standard drop-on
   const glassBeadsKg = surfaceAreaSqM * 0.30;
-
-  // Standard striper application time (~50 m/min)
   const spraySeconds = totalLengthMeters > 0 ? (totalLengthMeters / 50) * 60 : 0;
+
+  // Budget calculations (Feature D)
+  const totalCost = totalLengthMeters * costPerMeter;
 
   const formatSeconds = (sec: number): string => {
     if (sec === 0) return '0s';
@@ -61,7 +61,7 @@ export const SidePanel: React.FC = () => {
   };
 
   const handleExportCSV = () => {
-    exportCSV(features, totalLengthMeters, planName);
+    exportCSV(features, totalLengthMeters, planName, costPerMeter);
   };
 
   return (
@@ -102,6 +102,39 @@ export const SidePanel: React.FC = () => {
                 {features.length} element{features.length > 1 ? 's' : ''} · {lineCount} line{lineCount !== 1 ? 's' : ''} · {zoneCount} zone{zoneCount !== 1 ? 's' : ''}
               </span>
             )}
+          </div>
+        </div>
+
+        {/* Budget Estimator (Feature D) */}
+        <div className="sidebar-section">
+          <div className="section-title-row">
+            <span className="section-title">Budget estimate</span>
+            <div className="rate-input-wrapper">
+              <span className="rate-prefix">€</span>
+              <input
+                type="number"
+                min="0.5"
+                step="0.5"
+                value={costPerMeter}
+                onChange={(e) => {
+                  const val = parseFloat(e.target.value);
+                  if (!isNaN(val) && val >= 0) setCostPerMeter(val);
+                }}
+                className="rate-input tabular-nums"
+                title="Contractor application rate per meter"
+              />
+              <span className="rate-suffix">/m</span>
+            </div>
+          </div>
+
+          <div className="budget-readout">
+            <span className="budget-amount tabular-nums">
+              €{totalCost.toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+            </span>
+            <span className="budget-note">Estimated application total</span>
           </div>
         </div>
 
@@ -189,6 +222,7 @@ export const SidePanel: React.FC = () => {
               {features.map((feature, idx) => {
                 const isSelected = selectedFeatureId === feature.id;
                 const isLine = feature.type === 'LineString';
+                const fConfig = MARKING_CONFIGS[feature.markingType || 'standard'];
 
                 return (
                   <li
@@ -196,6 +230,12 @@ export const SidePanel: React.FC = () => {
                     className={`element-row ${isSelected ? 'selected' : ''}`}
                     onClick={() => setSelectedFeatureId(isSelected ? null : feature.id)}
                   >
+                    <span
+                      className="row-color-indicator"
+                      style={{ backgroundColor: feature.color || fConfig?.color || '#ffffff' }}
+                      title={fConfig?.label || 'Marking'}
+                    />
+
                     <span className="row-icon">
                       {isLine ? <PenTool size={13} /> : <Square size={13} />}
                     </span>
@@ -247,7 +287,7 @@ export const SidePanel: React.FC = () => {
             disabled={features.length === 0}
           >
             <FileSpreadsheet size={14} />
-            <span>Export CSV</span>
+            <span>Export CSV with Budget</span>
           </button>
         </div>
       </div>

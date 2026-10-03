@@ -2,9 +2,8 @@
 
 import React, { createContext, useContext, useState, useRef, useCallback } from 'react';
 import VectorSource from 'ol/source/Vector';
-import Feature from 'ol/Feature';
 import GeoJSON from 'ol/format/GeoJSON';
-import { BasemapType, DrawingTool, PlanFeature } from '../types/planner';
+import { BasemapType, DrawingTool, PlanFeature, MarkingType, MARKING_CONFIGS } from '../types/planner';
 import { calculateGeodesicLength } from '../utils/metrics';
 
 interface PlannerContextType {
@@ -12,6 +11,10 @@ interface PlannerContextType {
   setBasemap: (basemap: BasemapType) => void;
   activeTool: DrawingTool;
   setActiveTool: (tool: DrawingTool) => void;
+  markingType: MarkingType;
+  setMarkingType: (type: MarkingType) => void;
+  costPerMeter: number;
+  setCostPerMeter: (cost: number) => void;
   features: PlanFeature[];
   selectedFeatureId: string | null;
   setSelectedFeatureId: (id: string | null) => void;
@@ -28,6 +31,8 @@ interface PlannerContextType {
   isSidePanelOpen: boolean;
   setIsSidePanelOpen: (open: boolean) => void;
   toggleSidePanel: () => void;
+  panToLocation: (lon: number, lat: number) => void;
+  registerPanHandler: (handler: (lon: number, lat: number) => void) => void;
 }
 
 const PlannerContext = createContext<PlannerContextType | undefined>(undefined);
@@ -35,16 +40,30 @@ const PlannerContext = createContext<PlannerContextType | undefined>(undefined);
 export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [basemap, setBasemap] = useState<BasemapType>('satellite');
   const [activeTool, setActiveTool] = useState<DrawingTool>('line');
+  const [markingType, setMarkingType] = useState<MarkingType>('standard');
+  const [costPerMeter, setCostPerMeter] = useState<number>(3.50);
   const [features, setFeatures] = useState<PlanFeature[]>([]);
   const [selectedFeatureId, setSelectedFeatureId] = useState<string | null>(null);
   const [planName, setPlanName] = useState<string>('Tallinn Logistics Bay Layout');
   const [planId, setPlanId] = useState<string | null>(null);
   const [isSidePanelOpen, setIsSidePanelOpen] = useState<boolean>(true);
-  
+
+  const panHandlerRef = useRef<((lon: number, lat: number) => void) | null>(null);
+
+  const registerPanHandler = useCallback((handler: (lon: number, lat: number) => void) => {
+    panHandlerRef.current = handler;
+  }, []);
+
+  const panToLocation = useCallback((lon: number, lat: number) => {
+    if (panHandlerRef.current) {
+      panHandlerRef.current(lon, lat);
+    }
+  }, []);
+
   const toggleSidePanel = useCallback(() => {
     setIsSidePanelOpen((prev) => !prev);
   }, []);
-  
+
   const vectorSourceRef = useRef<VectorSource | null>(null);
 
   const syncFeaturesFromMap = useCallback(() => {
@@ -56,18 +75,25 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const coords = (geom as any)?.getCoordinates() || [];
       const length = geom ? calculateGeodesicLength(geom) : 0;
       const id = String(f.getId() || f.get('id') || `feat-${index + 1}`);
-      
-      // Ensure feature has an id property
+
+      const featMarkingType: MarkingType = f.get('markingType') || 'standard';
+      const featColor: string = f.get('color') || MARKING_CONFIGS[featMarkingType]?.color || '#ffffff';
+
+      // Ensure feature has consistent properties
       if (!f.getId()) f.setId(id);
       f.set('id', id);
       f.set('length_m', length);
       f.set('type', geomType);
+      f.set('markingType', featMarkingType);
+      f.set('color', featColor);
 
       return {
         id,
         type: geomType,
         coordinates: coords,
         lengthMeters: length,
+        markingType: featMarkingType,
+        color: featColor,
         label: f.get('label') || `${geomType === 'LineString' ? 'Line' : 'Zone'} #${index + 1}`,
       };
     });
@@ -77,7 +103,7 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const deleteFeature = useCallback((id: string) => {
     if (!vectorSourceRef.current) return;
-    const f = vectorSourceRef.current.getFeatureById(id) || 
+    const f = vectorSourceRef.current.getFeatureById(id) ||
               vectorSourceRef.current.getFeatures().find(item => item.get('id') === id);
     if (f) {
       vectorSourceRef.current.removeFeature(f);
@@ -120,6 +146,10 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setBasemap,
         activeTool,
         setActiveTool,
+        markingType,
+        setMarkingType,
+        costPerMeter,
+        setCostPerMeter,
         features,
         selectedFeatureId,
         setSelectedFeatureId,
@@ -136,6 +166,8 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         isSidePanelOpen,
         setIsSidePanelOpen,
         toggleSidePanel,
+        panToLocation,
+        registerPanHandler,
       }}
     >
       {children}

@@ -55,6 +55,8 @@ export function generateGeoJSONString(
           type: f.geometry?.type || matching?.type || 'LineString',
           length_m: matching ? matching.lengthMeters : (f.properties?.length_m ?? 0),
           label: matching?.label || `Element #${i + 1}`,
+          marking_type: matching?.markingType || f.properties?.markingType || 'standard',
+          color: matching?.color || f.properties?.color || '#ffffff',
           plan_name: planName,
         },
       };
@@ -79,6 +81,8 @@ export function generateGeoJSONString(
         type: f.type,
         length_m: f.lengthMeters,
         label: f.label || f.id,
+        marking_type: f.markingType || 'standard',
+        color: f.color || '#ffffff',
         plan_name: planName,
       },
     })),
@@ -89,8 +93,25 @@ export function generateGeoJSONString(
 
 /**
  * Generates structured CSV content with individual feature rows and cumulative total.
+ * If unitCostEur is provided, includes marking classification and cost estimates.
  */
-export function generateCSVContent(features: PlanFeature[], totalLengthMeters: number): string {
+export function generateCSVContent(
+  features: PlanFeature[],
+  totalLengthMeters: number,
+  unitCostEur?: number
+): string {
+  if (unitCostEur !== undefined && unitCostEur > 0) {
+    const headers = 'id,type,marking_type,length_meters,cost_eur';
+    const rows = features.map((f) => {
+      const cost = (f.lengthMeters * unitCostEur).toFixed(2);
+      return `${f.id},${f.type},${f.markingType || 'standard'},${f.lengthMeters.toFixed(1)},${cost}`;
+    });
+    const totalCost = (totalLengthMeters * unitCostEur).toFixed(2);
+    const totalRow = `TOTAL,,,${totalLengthMeters.toFixed(1)},${totalCost}`;
+
+    return [headers, ...rows, totalRow].join('\n');
+  }
+
   const headers = 'id,type,length_meters';
   const rows = features.map((f) => `${f.id},${f.type},${f.lengthMeters.toFixed(1)}`);
   const totalRow = `TOTAL,,${totalLengthMeters.toFixed(1)}`;
@@ -122,13 +143,14 @@ export function exportGeoJSON(
 export function exportCSV(
   features: PlanFeature[],
   totalLengthMeters: number,
-  planName: string
+  planName: string,
+  unitCostEur?: number
 ): boolean {
   if (!features || features.length === 0) {
     return false;
   }
 
-  const csvContent = generateCSVContent(features, totalLengthMeters);
+  const csvContent = generateCSVContent(features, totalLengthMeters, unitCostEur);
   const filename = `${sanitizeFilename(planName)}-${Date.now()}.csv`;
   downloadFile(csvContent, filename, 'text/csv;charset=utf-8');
   return true;
