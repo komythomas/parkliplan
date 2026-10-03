@@ -25,6 +25,10 @@ coverage/
 # Local database
 *.db
 *.sqlite3
+skills-lock.json
+skills.json
+ui_verification_report.md
+
 
 # Environment variables & secrets
 .env
