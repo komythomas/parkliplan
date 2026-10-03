@@ -7,7 +7,18 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![OpenLayers](https://img.shields.io/badge/OpenLayers-10.4-1f425f?logo=openlayers)](https://openlayers.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Docker](https://img.shields.io/badge/Docker-Compose-2496ed?logo=docker&logoColor=white)](https://www.docker.com/)
+[![Fly.io](https://img.shields.io/badge/API-Fly.io-8B5CF6?logo=fly.io&logoColor=white)](https://parkliplan-api.fly.dev/docs)
+
+---
+
+## Live Deployment
+
+| Service | URL |
+|:---|:---|
+| **Frontend (Vercel)** | Deploy via the [Vercel guide](#deploy-to-vercel) below |
+| **Backend API (Fly.io)** | [https://parkliplan-api.fly.dev](https://parkliplan-api.fly.dev) |
+| **Interactive API Docs (Swagger)** | [https://parkliplan-api.fly.dev/docs](https://parkliplan-api.fly.dev/docs) |
+| **API Health** | [https://parkliplan-api.fly.dev/health](https://parkliplan-api.fly.dev/health) |
 
 ---
 
@@ -17,6 +28,7 @@
 - [Core Capabilities](#core-capabilities)
 - [Mathematical Accuracy & Latitude Correction](#mathematical-accuracy--latitude-correction)
 - [Quick Start](#quick-start)
+- [Deploy to Vercel](#deploy-to-vercel)
 - [Keyboard Navigation](#keyboard-navigation)
 - [Architecture & Repository Structure](#architecture--repository-structure)
 - [Engineering Documentation](#engineering-documentation)
@@ -34,7 +46,7 @@ Autonomous pavement striping robots (such as those pioneered by **10Lines OÜ**)
 **Parkliplan** is a lightweight, web-native spatial layout editor engineered for striping contractors, estimators, and robotic fleet planners. It allows operators to design stall lines, safety bays, and boundaries directly over high-resolution aerial imagery, calculate distortion-free linear metrics, and export compliant geometries for robotic trajectory planners.
 
 ![Parkliplan Workspace Preview](./docs/screenshots/03-line-drawn-metrics.png)
-*Live preview of the Parkliplan canvas: high-resolution Esri aerial imagery, real-time WGS84 geodesic metrology (`87.4 m`), and 10Lines autonomous striping duration estimator.*
+*Live preview of the Parkliplan canvas: high-resolution Esri aerial imagery, real-time WGS84 geodesic metrology, and parking line budget estimator.*
 
 ---
 
@@ -43,11 +55,18 @@ Autonomous pavement striping robots (such as those pioneered by **10Lines OÜ**)
 - **Dual-Layer Basemap Synchronization**: Instant, zero-reload switching between sub-meter resolution **Esri World Imagery** and cartographic **OpenStreetMap**, allowing operators to match layout boundaries directly with asphalt joints and curbs.
 - **Topological Snapping & Editing**: Interactive vector drawing with a calibrated **12-pixel magnetic capture radius** (`ol/interaction/Snap`) for vertices and edges, accompanied by vertex manipulation (`ol/interaction/Modify`) and interactive deletion.
 - **WGS84 Geodesic Metrology**: Pavement distances are computed over the **WGS84 Earth ellipsoid** (`ol/sphere.getLength`), canceling out Web Mercator projection distortion ($\approx 1.96\times$ distance exaggeration at northern latitudes such as Tallinn, Estonia at 59.4° N).
-- **10Lines Execution Estimator**: Real-time operational metric translating linear meterage into execution duration, comparing autonomous robotic striping (~1.0 m/s) against conventional manual crews (~0.2 m/s).
+- **4 Marking Types with Color Coding**:
+  - White — Standard stall lines
+  - Blue — Accessible (PMR) spaces
+  - Yellow — Safety / fire zones
+  - Green — EV charging stations
+- **Budget Estimator**: Real-time cost estimation per linear meter for each marking type, with project total.
+- **Location Search**: Geocoder powered by Nominatim/OSM to navigate directly to any address or site.
+- **Live Telemetry Bar**: WGS84 cursor coordinates, current zoom level, and scale line displayed continuously.
 - **Dual Export Pipeline**:
   - **GeoJSON (RFC 7946)**: Coordinate projection in `EPSG:4326` (WGS84 `[longitude, latitude]`) with full feature metadata, ready for ingestion by GIS software (QGIS, ArcGIS) and autonomous path planning pipelines.
   - **Tabular CSV**: Formatted report listing individual element types, segment lengths, and the cumulative project total for cost estimation.
-- **State Persistence**: Full plan lifecycle management (`Create`, `Read`, `List`, `Delete`) backed by an asynchronous SQLite database through a typed FastAPI REST interface.
+- **State Persistence**: Full plan lifecycle management (`Create`, `Read`, `List`, `Delete`) backed by an asynchronous SQLite database on a persistent Fly.io volume through a typed FastAPI REST interface.
 
 ---
 
@@ -65,7 +84,7 @@ At the latitude of Tallinn, Estonia ($\phi \approx 59.437^\circ\text{ N}$):
 
 $$k = \frac{1}{\cos(59.437^\circ)} \approx 1.964$$
 
-A standard 5.0-meter parking stall line naively measured in Cartesian Web Mercator coordinates results in $\approx 9.82$ units—an error of **+96.4%**. 
+A standard 5.0-meter parking stall line naively measured in Cartesian Web Mercator coordinates results in $\approx 9.82$ units—an error of **+96.4%**.
 
 Parkliplan mitigates this distortion entirely by calculating all lengths and perimeters via great-circle ellipsoidal integration (`ol/sphere.getLength`), providing sub-centimeter physical accuracy required for autonomous vehicle navigation.
 
@@ -92,6 +111,42 @@ docker compose up --build
 | **Backend API Service** | `8000` | [http://localhost:8000](http://localhost:8000) |
 | **Interactive API Docs (Swagger)** | `8000` | [http://localhost:8000/docs](http://localhost:8000/docs) |
 | **Service Healthcheck** | `8000` | [http://localhost:8000/health](http://localhost:8000/health) |
+
+### Local Development (without Docker)
+
+```bash
+# Backend
+cd backend
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
+
+# Frontend (separate terminal)
+cd frontend
+npm install
+npm run dev
+```
+
+---
+
+## Deploy to Vercel
+
+The frontend is designed to be deployed on Vercel with the backend API proxied transparently via Next.js rewrites (no CORS configuration needed).
+
+### Steps
+
+1. **Import the repository** on [vercel.com/new](https://vercel.com/new)
+2. **Framework preset**: Next.js (auto-detected)
+3. **Root Directory**: `frontend`
+4. **Build command**: `next build` (default)
+5. **Environment Variables** (optional — defaults to the live Fly.io backend):
+
+   | Variable | Value |
+   |:---|:---|
+   | `BACKEND_API_URL` | `https://parkliplan-api.fly.dev` |
+
+6. Click **Deploy**.
+
+> The Next.js rewrite in `next.config.ts` automatically proxies all `/api/*` requests from the Vercel frontend to the Fly.io backend. No CORS headers or credentials are required.
 
 ---
 
@@ -122,7 +177,7 @@ parkliplan/
 │   │   ├── components/
 │   │   │   ├── MapView.tsx       # OpenLayers map canvas, layers, draw, modify & snap
 │   │   │   ├── Toolbar.tsx       # Tool selection, basemap switch, persistence & exports
-│   │   │   ├── SidePanel.tsx     # Geodesic metrics, 10Lines estimator & element list
+│   │   │   ├── SidePanel.tsx     # Geodesic metrics, budget estimator & element list
 │   │   │   └── LoadPlanModal.tsx # Plan retrieval modal connected to SQLite API
 │   │   ├── context/
 │   │   │   └── PlannerContext.tsx# Centralized state machine syncing OpenLayers with React
@@ -136,14 +191,27 @@ parkliplan/
 │
 ├── backend/                      # FastAPI Python Application
 │   ├── app/
-│   │   ├── main.py               # ASGI application, CORS middleware, and REST routes
+│   │   ├── main.py               # ASGI application, CORS middleware, rate limiting & REST routes
 │   │   ├── models.py             # Pydantic v2 schemas for RFC 7946 GeoJSON validation
 │   │   └── database.py           # aiosqlite asynchronous SQLite data access layer
-│   └── tests/                    # pytest integration and validation test suite
+│   ├── fly.toml                  # Fly.io deployment configuration
+│   └── Dockerfile                # Production container (port 8080, DATABASE_PATH env var)
 │
-├── docker-compose.yml            # Multi-container service definitions
+├── docker-compose.yml            # Multi-container service definitions (local dev)
 ├── LICENSE                       # MIT License
 └── README.md                     # Engineering documentation
+```
+
+### Production Architecture
+
+```
+Browser
+  │
+  ├─ GET / → Vercel (Next.js SSR)
+  │
+  └─ /api/* → Next.js Rewrite → Fly.io (FastAPI)
+                                      │
+                                      └─ /data/parkliplan.db (persistent volume)
 ```
 
 ---
@@ -196,6 +264,8 @@ py -m pytest
 | `GET` | `/api/plans` | _None_ | `200 OK` | Lists summary metadata for all saved plans. |
 | `GET` | `/api/plans/{id}` | _None_ | `200 OK` | Returns full RFC 7946 GeoJSON FeatureCollection. |
 | `DELETE` | `/api/plans/{id}` | _None_ | `200 OK` | Permanently deletes a saved plan by its identifier. |
+
+Full interactive documentation: [https://parkliplan-api.fly.dev/docs](https://parkliplan-api.fly.dev/docs)
 
 ---
 
