@@ -10,6 +10,10 @@ DB_PATH = os.getenv("DATABASE_PATH", "plans.db")
 
 async def init_db() -> None:
     """Initializes the SQLite database and creates the plans table."""
+    db_dir = os.path.dirname(DB_PATH)
+    if db_dir:
+        os.makedirs(db_dir, exist_ok=True)
+
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute(
             """

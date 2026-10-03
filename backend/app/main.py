@@ -2,8 +2,11 @@
 from contextlib import asynccontextmanager
 import uuid
 from typing import List
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 from app.models import (
     PlanCreateRequest,
@@ -17,6 +20,9 @@ from app.database import (
     get_plan_by_id,
     delete_plan_by_id,
 )
+
+# Initialize slowapi rate limiter based on client IP
+limiter = Limiter(key_func=get_remote_address, default_limits=["120/minute"])
 
 
 @asynccontextmanager
@@ -32,6 +38,10 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+# Attach slowapi rate limiter state and exception handler
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Configure CORS for local development and containerized web frontend
 app.add_middleware(
@@ -55,10 +65,30 @@ async def healthcheck():
     status_code=status.HTTP_201_CREATED,
     tags=["Plans"],
 )
-async def create_or_save_plan(payload: PlanCreateRequest):
+@limiter.limit("30/minute")
+async def create_or_save_plan(request: Request, payload: PlanCreateRequest):
     """Persists a new plan with its RFC 7946 GeoJSON FeatureCollection."""
-    plan_id = f"plan-{uuid.uuid4().hex[:10]}"
+    # Payload sanity constraints
+    if len(payload.name.strip()) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Plan name cannot be empty.",
+        )
+
+    if len(payload.name) > 120:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Plan name exceeds 120 characters limit.",
+        )
+
     features = payload.geojson.features
+    if len(features) > 1000:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Payload exceeds maximum limit of 1000 features per plan.",
+        )
+
+    plan_id = f"plan-{uuid.uuid4().hex[:10]}"
     features_count = len(features)
 
     # Compute or aggregate total length from feature properties
@@ -69,7 +99,7 @@ async def create_or_save_plan(payload: PlanCreateRequest):
 
     saved = await save_plan(
         plan_id=plan_id,
-        name=payload.name,
+        name=payload.name.strip(),
         total_length_m=total_length,
         features_count=features_count,
         geojson_dict=payload.geojson.model_dump(),
@@ -83,7 +113,8 @@ async def create_or_save_plan(payload: PlanCreateRequest):
     response_model=List[PlanSummaryResponse],
     tags=["Plans"],
 )
-async def get_plans_list():
+@limiter.limit("120/minute")
+async def get_plans_list(request: Request):
     """Lists summaries of all persisted plans."""
     return await list_plans()
 
@@ -92,7 +123,8 @@ async def get_plans_list():
     "/api/plans/{plan_id}",
     tags=["Plans"],
 )
-async def get_single_plan(plan_id: str):
+@limiter.limit("120/minute")
+async def get_single_plan(request: Request, plan_id: str):
     """Retrieves full GeoJSON for a plan by its ID."""
     plan = await get_plan_by_id(plan_id)
     if not plan:
@@ -107,7 +139,8 @@ async def get_single_plan(plan_id: str):
     "/api/plans/{plan_id}",
     tags=["Plans"],
 )
-async def delete_single_plan(plan_id: str):
+@limiter.limit("30/minute")
+async def delete_single_plan(request: Request, plan_id: str):
     """Deletes a plan by its ID."""
     deleted = await delete_plan_by_id(plan_id)
     if not deleted:
@@ -119,5 +152,7 @@ async def delete_single_plan(plan_id: str):
 
 
 if __name__ == "__main__":
+    import os
     import uvicorn
-    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
+    port = int(os.getenv("PORT", "8080"))
+    uvicorn.run("app.main:app", host="0.0.0.0", port=port, reload=True)

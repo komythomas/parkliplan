@@ -2,7 +2,7 @@
  * API client for interacting with the Parkliplan FastAPI backend.
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 export interface PlanSummary {
   id: string;
