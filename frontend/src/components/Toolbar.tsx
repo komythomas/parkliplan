@@ -14,6 +14,7 @@ import {
   CloudUpload,
   FolderOpen,
   Loader2,
+  Sidebar,
   Check,
 } from 'lucide-react';
 import { usePlanner } from '../context/PlannerContext';
@@ -34,6 +35,8 @@ export const Toolbar: React.FC = () => {
     totalLengthMeters,
     clearAllFeatures,
     vectorSourceRef,
+    isSidePanelOpen,
+    toggleSidePanel,
   } = usePlanner();
 
   const [isEditingName, setIsEditingName] = useState(false);
@@ -44,7 +47,7 @@ export const Toolbar: React.FC = () => {
 
   const handleSavePlan = async () => {
     if (features.length === 0) {
-      showNotice('Draw at least one line or zone before saving.');
+      showNotice('Draw at least one element before saving.');
       return;
     }
     setIsSaving(true);
@@ -87,7 +90,7 @@ export const Toolbar: React.FC = () => {
     }
     const success = exportCSV(features, totalLengthMeters, planName);
     if (success) {
-      showNotice('CSV report exported');
+      showNotice('CSV spreadsheet exported');
     }
   };
 
@@ -105,43 +108,82 @@ export const Toolbar: React.FC = () => {
   ];
 
   return (
-    <div className="floating-toolbar-wrapper">
-      <header className="floating-dock">
-        {/* Brand Capsule */}
-        <div className="dock-brand">
-          <span className="brand-gem" />
-          <span className="brand-label">Parkliplan</span>
-          <span className="tag-10lines" title="10Lines Autonomous Striping Ready">10Lines</span>
+    <header className="pro-header">
+      {/* Zone 1: Brand & Plan Name */}
+      <div className="header-zone-left">
+        <div className="brand-badge">
+          <span className="brand-dot" />
+          <span className="brand-name">Parkliplan</span>
+          <span className="brand-chip">PRO GIS</span>
         </div>
 
-        <div className="dock-divider" />
+        <div className="plan-name-container">
+          {isEditingName ? (
+            <div className="plan-name-edit">
+              <input
+                type="text"
+                value={tempName}
+                onChange={(e) => setTempName(e.target.value)}
+                onBlur={handleNameSave}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleNameSave();
+                  if (e.key === 'Escape') {
+                    setTempName(planName);
+                    setIsEditingName(false);
+                  }
+                }}
+                autoFocus
+                className="plan-name-input"
+              />
+              <button type="button" onClick={handleNameSave} className="plan-name-confirm">
+                <Check size={12} />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setTempName(planName);
+                setIsEditingName(true);
+              }}
+              className="plan-name-btn"
+              title="Click to rename layout"
+            >
+              <span>{planName}</span>
+              <Edit3 size={11} className="edit-icon" />
+            </button>
+          )}
+        </div>
+      </div>
 
-        {/* Basemap Switcher */}
-        <div className="dock-segmented" role="group" aria-label="Basemap Toggle">
+      {/* Zone 2: Drawing Tools & Basemap Switcher */}
+      <div className="header-zone-center">
+        {/* Basemap Segment */}
+        <div className="segmented-group" role="group" aria-label="Basemap">
           <button
             type="button"
-            className={`dock-segmented-btn ${basemap === 'satellite' ? 'active' : ''}`}
+            className={`segmented-item ${basemap === 'satellite' ? 'active' : ''}`}
             onClick={() => setBasemap('satellite')}
-            title="High-resolution Esri World Imagery"
+            title="Satellite Aerial Imagery (Esri)"
           >
             <Layers size={13} />
             <span>Satellite</span>
           </button>
           <button
             type="button"
-            className={`dock-segmented-btn ${basemap === 'osm' ? 'active' : ''}`}
+            className={`segmented-item ${basemap === 'osm' ? 'active' : ''}`}
             onClick={() => setBasemap('osm')}
-            title="OpenStreetMap Street View"
+            title="OpenStreetMap Cartography"
           >
             <Layers size={13} />
             <span>Street</span>
           </button>
         </div>
 
-        <div className="dock-divider" />
+        <div className="header-divider" />
 
-        {/* Vector Drawing Tools */}
-        <div className="dock-tools" role="toolbar" aria-label="Vector Drawing Tools">
+        {/* Vector Drawing Toolset */}
+        <div className="tools-segmented" role="toolbar" aria-label="Drawing Tools">
           {tools.map((tool) => {
             const isActive = activeTool === tool.id;
             return (
@@ -149,90 +191,115 @@ export const Toolbar: React.FC = () => {
                 key={tool.id}
                 type="button"
                 onClick={() => setActiveTool(tool.id)}
-                className={`dock-tool-btn ${isActive ? 'active' : ''} ${tool.id === 'delete' ? 'danger-tool' : ''}`}
-                title={`${tool.label} mode (Shortcut: ${tool.shortcut})`}
+                className={`tool-item ${isActive ? 'active' : ''} ${tool.id === 'delete' ? 'danger' : ''}`}
+                title={`${tool.label} mode (${tool.shortcut})`}
               >
                 {tool.icon}
                 <span>{tool.label}</span>
-                <span className="dock-key-badge">{tool.shortcut}</span>
+                <span className="shortcut-pill">{tool.shortcut}</span>
               </button>
             );
           })}
         </div>
 
-        {/* Snapping Pill */}
-        <div className="dock-snap-badge" title="12px magnetic snap enabled for vertices and edges">
-          <span className="snap-pulse-dot" />
-          <span>Snap 12px</span>
+        {/* Magnetic Snap Badge */}
+        <div className="snap-pill" title="12px magnetic vertex and edge snapping active">
+          <span className="snap-dot" />
+          <span>12px Snap</span>
+        </div>
+      </div>
+
+      {/* Zone 3: Actions & Sidebar Toggle */}
+      <div className="header-zone-right">
+        {/* Persistence Group */}
+        <div className="btn-group">
+          <button
+            type="button"
+            onClick={handleSavePlan}
+            disabled={features.length === 0 || isSaving}
+            className="action-pill save-pill"
+            title="Save plan to SQLite database"
+          >
+            {isSaving ? <Loader2 size={13} className="spinner" /> : <CloudUpload size={13} />}
+            <span>Save</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsLoadModalOpen(true)}
+            className="action-pill"
+            title="Load saved layout"
+          >
+            <FolderOpen size={13} />
+            <span>Load</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              if (features.length === 0) return;
+              if (window.confirm('Clear all lines and zones from canvas?')) {
+                clearAllFeatures();
+              }
+            }}
+            disabled={features.length === 0}
+            className="action-pill"
+            title="Clear all drawn elements"
+          >
+            <RotateCcw size={13} />
+            <span>Clear</span>
+          </button>
         </div>
 
-        <div className="dock-divider" />
+        <div className="header-divider" />
 
-        {/* Action Controls */}
+        {/* Exports Group */}
+        <div className="btn-group">
+          <button
+            type="button"
+            onClick={handleExportGeoJSON}
+            disabled={features.length === 0}
+            className="action-pill export-pill"
+            title="Export GeoJSON RFC 7946"
+          >
+            <Download size={13} />
+            <span>GeoJSON</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleExportCSV}
+            disabled={features.length === 0}
+            className="action-pill export-pill"
+            title="Export tabular CSV summary"
+          >
+            <FileSpreadsheet size={13} />
+            <span>CSV</span>
+          </button>
+        </div>
+
+        <div className="header-divider" />
+
+        {/* Sidebar Toggle Button */}
         <button
           type="button"
-          onClick={handleSavePlan}
-          disabled={features.length === 0 || isSaving}
-          className="dock-action-btn btn-save"
-          title="Save plan to SQLite database"
+          onClick={toggleSidePanel}
+          className={`sidebar-toggle-btn ${isSidePanelOpen ? 'active' : ''}`}
+          title={isSidePanelOpen ? 'Collapse Telemetry & Estimator Panel' : 'Open Telemetry & Estimator Panel'}
+          aria-label="Toggle Telemetry Sidebar"
         >
-          {isSaving ? <Loader2 size={13} className="spinner" /> : <CloudUpload size={13} />}
-          <span>Save</span>
+          <Sidebar size={14} />
+          <span className="sidebar-btn-label">Telemetry</span>
+          {features.length > 0 && (
+            <span className="sidebar-count-badge">{features.length}</span>
+          )}
         </button>
-
-        <button
-          type="button"
-          onClick={() => setIsLoadModalOpen(true)}
-          className="dock-action-btn"
-          title="Open saved plans repository"
-        >
-          <FolderOpen size={13} />
-          <span>Load</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => {
-            if (features.length === 0) return;
-            if (window.confirm('Clear all lines and zones from canvas?')) {
-              clearAllFeatures();
-            }
-          }}
-          disabled={features.length === 0}
-          className="dock-action-btn"
-          title="Clear all features"
-        >
-          <RotateCcw size={13} />
-          <span>Clear</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={handleExportGeoJSON}
-          disabled={features.length === 0}
-          className="dock-action-btn"
-          title="Export GeoJSON RFC 7946"
-        >
-          <Download size={13} />
-          <span>GeoJSON</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={handleExportCSV}
-          disabled={features.length === 0}
-          className="dock-action-btn"
-          title="Export tabular CSV summary"
-        >
-          <FileSpreadsheet size={13} />
-          <span>CSV</span>
-        </button>
-      </header>
+      </div>
 
       {/* Floating Toast Notification */}
       {exportNotice && (
-        <div className="nordic-toast">
-          <span className="toast-gem" />
+        <div className="pro-toast">
+          <Check size={13} />
           <span>{exportNotice}</span>
         </div>
       )}
@@ -243,6 +310,6 @@ export const Toolbar: React.FC = () => {
         onClose={() => setIsLoadModalOpen(false)}
         onPlanLoaded={(loadedName) => showNotice(`Loaded "${loadedName}"`)}
       />
-    </div>
+    </header>
   );
 };

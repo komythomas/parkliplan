@@ -25,6 +25,9 @@ interface PlannerContextType {
   deleteFeature: (id: string) => void;
   clearAllFeatures: () => void;
   loadPlanFromGeoJSON: (geojson: any, name?: string, id?: string) => void;
+  isSidePanelOpen: boolean;
+  setIsSidePanelOpen: (open: boolean) => void;
+  toggleSidePanel: () => void;
 }
 
 const PlannerContext = createContext<PlannerContextType | undefined>(undefined);
@@ -36,6 +39,11 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [selectedFeatureId, setSelectedFeatureId] = useState<string | null>(null);
   const [planName, setPlanName] = useState<string>('Tallinn Logistics Bay Layout');
   const [planId, setPlanId] = useState<string | null>(null);
+  const [isSidePanelOpen, setIsSidePanelOpen] = useState<boolean>(true);
+  
+  const toggleSidePanel = useCallback(() => {
+    setIsSidePanelOpen((prev) => !prev);
+  }, []);
   
   const vectorSourceRef = useRef<VectorSource | null>(null);
 
@@ -125,6 +133,9 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         deleteFeature,
         clearAllFeatures,
         loadPlanFromGeoJSON,
+        isSidePanelOpen,
+        setIsSidePanelOpen,
+        toggleSidePanel,
       }}
     >
       {children}

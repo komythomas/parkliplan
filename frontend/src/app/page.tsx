@@ -43,17 +43,17 @@ function PlannerContent() {
   }, [setActiveTool]);
 
   return (
-    <div className="app-container">
-      {/* Fullscreen Map Canvas */}
-      <main className="map-viewport" aria-label="Geospatial Map Canvas">
-        <MapView />
-      </main>
-
-      {/* Floating Island Toolbar */}
+    <div className="pro-app">
+      {/* Full-width Fixed Top Header Bar */}
       <Toolbar />
 
-      {/* Floating Collapsible Telemetry & Inventory Panel */}
-      <SidePanel />
+      {/* Main Workspace: Map Canvas + Docked Sidebar */}
+      <div className="pro-workspace">
+        <main className="pro-map-area" aria-label="Geospatial Map Canvas">
+          <MapView />
+        </main>
+        <SidePanel />
+      </div>
     </div>
   );
 }
