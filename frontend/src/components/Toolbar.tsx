@@ -55,7 +55,7 @@ export const Toolbar: React.FC = () => {
       const geojsonStr = generateGeoJSONString(vectorSourceRef.current, features, planName);
       const geojsonObj = JSON.parse(geojsonStr);
       const saved = await savePlanToBackend(planName, geojsonObj);
-      showNotice(`Plan saved (${saved.id})`);
+      showNotice(`Plan saved (${saved.id.slice(0, 8)})`);
     } catch (err: any) {
       showNotice(`Save error: ${err.message}`);
     } finally {
@@ -79,7 +79,7 @@ export const Toolbar: React.FC = () => {
     }
     const success = exportGeoJSON(vectorSourceRef.current, features, planName);
     if (success) {
-      showNotice('GeoJSON (RFC 7946) exported');
+      showNotice('GeoJSON exported');
     }
   };
 
@@ -90,7 +90,7 @@ export const Toolbar: React.FC = () => {
     }
     const success = exportCSV(features, totalLengthMeters, planName);
     if (success) {
-      showNotice('CSV spreadsheet exported');
+      showNotice('CSV exported');
     }
   };
 
@@ -109,12 +109,10 @@ export const Toolbar: React.FC = () => {
 
   return (
     <header className="pro-header">
-      {/* Zone 1: Brand & Plan Name */}
+      {/* Left: Brand & File Name */}
       <div className="header-zone-left">
         <div className="brand-badge">
-          <span className="brand-dot" />
           <span className="brand-name">Parkliplan</span>
-          <span className="brand-chip">PRO GIS</span>
         </div>
 
         <div className="plan-name-container">
@@ -135,8 +133,8 @@ export const Toolbar: React.FC = () => {
                 autoFocus
                 className="plan-name-input"
               />
-              <button type="button" onClick={handleNameSave} className="plan-name-confirm">
-                <Check size={12} />
+              <button type="button" onClick={handleNameSave} className="plan-name-confirm" aria-label="Confirm rename">
+                <Check size={13} />
               </button>
             </div>
           ) : (
@@ -147,7 +145,7 @@ export const Toolbar: React.FC = () => {
                 setIsEditingName(true);
               }}
               className="plan-name-btn"
-              title="Click to rename layout"
+              title="Click to rename"
             >
               <span>{planName}</span>
               <Edit3 size={11} className="edit-icon" />
@@ -156,15 +154,15 @@ export const Toolbar: React.FC = () => {
         </div>
       </div>
 
-      {/* Zone 2: Drawing Tools & Basemap Switcher */}
+      {/* Center: Basemap & Drawing Tools */}
       <div className="header-zone-center">
-        {/* Basemap Segment */}
+        {/* Basemap Switcher */}
         <div className="segmented-group" role="group" aria-label="Basemap">
           <button
             type="button"
             className={`segmented-item ${basemap === 'satellite' ? 'active' : ''}`}
             onClick={() => setBasemap('satellite')}
-            title="Satellite Aerial Imagery (Esri)"
+            title="Satellite Imagery"
           >
             <Layers size={13} />
             <span>Satellite</span>
@@ -173,16 +171,16 @@ export const Toolbar: React.FC = () => {
             type="button"
             className={`segmented-item ${basemap === 'osm' ? 'active' : ''}`}
             onClick={() => setBasemap('osm')}
-            title="OpenStreetMap Cartography"
+            title="Map Cartography"
           >
             <Layers size={13} />
-            <span>Street</span>
+            <span>Map</span>
           </button>
         </div>
 
         <div className="header-divider" />
 
-        {/* Vector Drawing Toolset */}
+        {/* Vector Tools */}
         <div className="tools-segmented" role="toolbar" aria-label="Drawing Tools">
           {tools.map((tool) => {
             const isActive = activeTool === tool.id;
@@ -192,33 +190,33 @@ export const Toolbar: React.FC = () => {
                 type="button"
                 onClick={() => setActiveTool(tool.id)}
                 className={`tool-item ${isActive ? 'active' : ''} ${tool.id === 'delete' ? 'danger' : ''}`}
-                title={`${tool.label} mode (${tool.shortcut})`}
+                title={`${tool.label} (${tool.shortcut})`}
               >
                 {tool.icon}
                 <span>{tool.label}</span>
-                <span className="shortcut-pill">{tool.shortcut}</span>
+                <span className="key-hint">{tool.shortcut}</span>
               </button>
             );
           })}
         </div>
 
-        {/* Magnetic Snap Badge */}
-        <div className="snap-pill" title="12px magnetic vertex and edge snapping active">
-          <span className="snap-dot" />
-          <span>12px Snap</span>
+        <div className="header-divider" />
+
+        {/* Magnetic Snap Status */}
+        <div className="snap-indicator" title="Magnetic snapping active (12px)">
+          <span>Snap 12px</span>
         </div>
       </div>
 
-      {/* Zone 3: Actions & Sidebar Toggle */}
+      {/* Right: Actions & Sidebar Toggle */}
       <div className="header-zone-right">
-        {/* Persistence Group */}
         <div className="btn-group">
           <button
             type="button"
             onClick={handleSavePlan}
             disabled={features.length === 0 || isSaving}
-            className="action-pill save-pill"
-            title="Save plan to SQLite database"
+            className="action-btn primary"
+            title="Save layout"
           >
             {isSaving ? <Loader2 size={13} className="spinner" /> : <CloudUpload size={13} />}
             <span>Save</span>
@@ -227,24 +225,24 @@ export const Toolbar: React.FC = () => {
           <button
             type="button"
             onClick={() => setIsLoadModalOpen(true)}
-            className="action-pill"
-            title="Load saved layout"
+            className="action-btn"
+            title="Open saved layouts"
           >
             <FolderOpen size={13} />
-            <span>Load</span>
+            <span>Open</span>
           </button>
 
           <button
             type="button"
             onClick={() => {
               if (features.length === 0) return;
-              if (window.confirm('Clear all lines and zones from canvas?')) {
+              if (window.confirm('Clear all drawn lines and zones?')) {
                 clearAllFeatures();
               }
             }}
             disabled={features.length === 0}
-            className="action-pill"
-            title="Clear all drawn elements"
+            className="action-btn"
+            title="Clear canvas"
           >
             <RotateCcw size={13} />
             <span>Clear</span>
@@ -253,14 +251,13 @@ export const Toolbar: React.FC = () => {
 
         <div className="header-divider" />
 
-        {/* Exports Group */}
         <div className="btn-group">
           <button
             type="button"
             onClick={handleExportGeoJSON}
             disabled={features.length === 0}
-            className="action-pill export-pill"
-            title="Export GeoJSON RFC 7946"
+            className="action-btn"
+            title="Export GeoJSON"
           >
             <Download size={13} />
             <span>GeoJSON</span>
@@ -270,8 +267,8 @@ export const Toolbar: React.FC = () => {
             type="button"
             onClick={handleExportCSV}
             disabled={features.length === 0}
-            className="action-pill export-pill"
-            title="Export tabular CSV summary"
+            className="action-btn"
+            title="Export CSV"
           >
             <FileSpreadsheet size={13} />
             <span>CSV</span>
@@ -280,23 +277,23 @@ export const Toolbar: React.FC = () => {
 
         <div className="header-divider" />
 
-        {/* Sidebar Toggle Button */}
+        {/* Sidebar Toggle */}
         <button
           type="button"
           onClick={toggleSidePanel}
           className={`sidebar-toggle-btn ${isSidePanelOpen ? 'active' : ''}`}
-          title={isSidePanelOpen ? 'Collapse Telemetry & Estimator Panel' : 'Open Telemetry & Estimator Panel'}
-          aria-label="Toggle Telemetry Sidebar"
+          title={isSidePanelOpen ? 'Hide side panel' : 'Show side panel'}
+          aria-label="Toggle side panel"
         >
           <Sidebar size={14} />
-          <span className="sidebar-btn-label">Telemetry</span>
+          <span>Panel</span>
           {features.length > 0 && (
-            <span className="sidebar-count-badge">{features.length}</span>
+            <span className="badge-count">{features.length}</span>
           )}
         </button>
       </div>
 
-      {/* Floating Toast Notification */}
+      {/* Toast Notification */}
       {exportNotice && (
         <div className="pro-toast">
           <Check size={13} />
@@ -304,7 +301,7 @@ export const Toolbar: React.FC = () => {
         </div>
       )}
 
-      {/* Load Plan Modal */}
+      {/* Load Modal */}
       <LoadPlanModal
         isOpen={isLoadModalOpen}
         onClose={() => setIsLoadModalOpen(false)}
