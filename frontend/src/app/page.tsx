@@ -44,13 +44,16 @@ function PlannerContent() {
 
   return (
     <div className="app-container">
+      {/* Fullscreen Map Canvas */}
+      <main className="map-viewport" aria-label="Geospatial Map Canvas">
+        <MapView />
+      </main>
+
+      {/* Floating Island Toolbar */}
       <Toolbar />
-      <div className="main-content">
-        <main className="map-wrapper" aria-label="Geospatial Map Canvas">
-          <MapView />
-        </main>
-        <SidePanel />
-      </div>
+
+      {/* Floating Collapsible Telemetry & Inventory Panel */}
+      <SidePanel />
     </div>
   );
 }

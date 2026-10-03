@@ -19,6 +19,7 @@
 - [Quick Start](#quick-start)
 - [Keyboard Navigation](#keyboard-navigation)
 - [Architecture & Repository Structure](#architecture--repository-structure)
+- [Engineering Documentation](#engineering-documentation)
 - [Automated Verification Suite](#automated-verification-suite)
 - [REST API Reference](#rest-api-reference)
 - [Author & License](#author--license)
@@ -144,6 +145,16 @@ parkliplan/
 ├── LICENSE                       # MIT License
 └── README.md                     # Engineering documentation
 ```
+
+---
+
+## Engineering Documentation
+
+Detailed technical design notes and data contracts are documented in the [`docs/`](docs/) directory:
+
+- [**`docs/GEODESICS.md`**](docs/GEODESICS.md): In-depth physical derivation of Web Mercator distortion ($k = \sec\phi$), comparison table across European/Nordic latitudes, and WGS84 great-circle spherical integration implementation.
+- [**`docs/ROBOTIC_SPEC.md`**](docs/ROBOTIC_SPEC.md): Autonomous striping robot trajectory planning specification, RFC 7946 GeoJSON schema, RTK-GNSS local frame projection (ENU), and nozzle synchronization protocols.
+- [**`docs/screenshots/`**](docs/screenshots/): Full-resolution visual test scans of the live interface and metrology readouts.
 
 ---
 

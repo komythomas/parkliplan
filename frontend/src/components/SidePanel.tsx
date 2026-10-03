@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   PenTool,
   Square,
@@ -10,15 +10,17 @@ import {
   Bot,
   UserCheck,
   Zap,
-  Info,
-  Layers,
   ChevronRight,
+  ChevronLeft,
+  Ruler,
 } from 'lucide-react';
 import { usePlanner } from '../context/PlannerContext';
 import { formatMeters } from '../utils/metrics';
 import { exportGeoJSON, exportCSV } from '../utils/export';
 
 export const SidePanel: React.FC = () => {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
   const {
     features,
     totalLengthMeters,
@@ -29,22 +31,21 @@ export const SidePanel: React.FC = () => {
     vectorSourceRef,
   } = usePlanner();
 
-  // Metrics computation
   const lineCount = features.filter((f) => f.type === 'LineString').length;
   const zoneCount = features.filter((f) => f.type === 'Polygon').length;
 
-  // 10Lines Autonomous Striping Robot vs Manual Striping Estimation
-  // 10Lines autonomous robot speed: ~1.0 m/s (~60 m/min)
-  // Manual crew striping speed (chalking + push striper): ~0.2 m/s (~12 m/min)
-  const robotMinutes = totalLengthMeters > 0 ? (totalLengthMeters / 60) : 0;
-  const manualMinutes = totalLengthMeters > 0 ? (totalLengthMeters / 12) : 0;
+  // 10Lines Autonomous Striping Robot vs Manual Crew Estimation
+  // Autonomous Striping: ~1.0 m/s (~60 m/min)
+  // Manual crew: ~0.2 m/s (~12 m/min)
+  const robotMinutes = totalLengthMeters > 0 ? totalLengthMeters / 60 : 0;
+  const manualMinutes = totalLengthMeters > 0 ? totalLengthMeters / 12 : 0;
 
   const formatDuration = (minutes: number): string => {
     if (minutes === 0) return '0 min';
-    if (minutes < 1) return `${Math.round(minutes * 60)} sec`;
+    if (minutes < 1) return `${Math.round(minutes * 60)}s`;
     const m = Math.floor(minutes);
     const s = Math.round((minutes - m) * 60);
-    return s > 0 ? `${m}m ${s}s` : `${m} min`;
+    return s > 0 ? `${m}m ${s}s` : `${m}m`;
   };
 
   const timeSavedPercent = manualMinutes > 0
@@ -60,203 +61,196 @@ export const SidePanel: React.FC = () => {
   };
 
   return (
-    <aside className="side-panel-container">
-      {/* Panel Header */}
-      <div className="panel-header">
-        <div className="panel-title-row">
-          <Layers size={18} className="panel-header-icon" />
-          <h2 className="panel-title">Plan Overview</h2>
-        </div>
-        <span className="panel-subtitle">Real-time Geodesic Metrics & Inventory</span>
-      </div>
+    <>
+      {/* Floating Pill Trigger when Collapsed */}
+      {isCollapsed && (
+        <button
+          type="button"
+          className="panel-expand-trigger"
+          onClick={() => setIsCollapsed(false)}
+          title="Expand telemetry panel"
+        >
+          <ChevronLeft size={15} />
+          <Ruler size={14} />
+          <span className="tabular-nums">{formatMeters(totalLengthMeters)}</span>
+        </button>
+      )}
 
-      <div className="panel-content">
-        {/* Hero Metric Card: Total Geodesic Distance */}
-        <section className="metric-card hero-card">
-          <div className="metric-label-row">
-            <span className="metric-label">TOTAL LINEAR METERS</span>
-            <span className="accuracy-badge" title="WGS84 Geodesic Ellipsoidal Distance">
-              WGS84 Geodesic
-            </span>
+      {/* Floating Side Panel */}
+      <aside className={`floating-panel-container ${isCollapsed ? 'collapsed' : ''}`}>
+        {/* Panel Header */}
+        <header className="panel-header">
+          <div className="panel-title-wrapper">
+            <h2 className="panel-title">Telemetry & Inventory</h2>
           </div>
-          <div className="metric-value-display">
-            <span className="metric-number">
-              {totalLengthMeters.toLocaleString('en-US', {
-                minimumFractionDigits: 1,
-                maximumFractionDigits: 1,
-              })}
-            </span>
-            <span className="metric-unit">m</span>
-          </div>
-          <div className="metric-breakdown">
-            <span className="breakdown-item">
-              <strong>{features.length}</strong> elements
-            </span>
-            <span className="breakdown-separator">•</span>
-            <span className="breakdown-item">
-              <strong>{lineCount}</strong> lines
-            </span>
-            <span className="breakdown-separator">•</span>
-            <span className="breakdown-item">
-              <strong>{zoneCount}</strong> zones
-            </span>
-          </div>
-        </section>
+          <button
+            type="button"
+            className="panel-toggle-btn"
+            onClick={() => setIsCollapsed(true)}
+            title="Minimize panel"
+          >
+            <ChevronRight size={16} />
+          </button>
+        </header>
 
-        {/* 10Lines Autonomous Striping vs Manual Striping Estimator */}
-        <section className="metric-card roi-card">
-          <div className="roi-header">
-            <div className="roi-title-group">
-              <Zap size={16} className="roi-icon" />
-              <span className="roi-title">10Lines Striping Estimator</span>
+        <div className="panel-scroll-area">
+          {/* Hero Linear Meterage Card */}
+          <section className="nordic-card hero-meterage-card">
+            <div className="hero-micro-label">
+              <span>Total Linear Distance</span>
+              <span className="geo-spec-tag">WGS84 Geodesic</span>
             </div>
-            {totalLengthMeters > 0 && (
-              <span className="roi-savings-badge">
-                ~{timeSavedPercent}% Faster
+            <div className="hero-metric-readout">
+              <span className="hero-metric-value tabular-nums">
+                {totalLengthMeters.toLocaleString('en-US', {
+                  minimumFractionDigits: 1,
+                  maximumFractionDigits: 1,
+                })}
               </span>
-            )}
-          </div>
+              <span className="hero-metric-unit">m</span>
+            </div>
+            <div className="hero-breakdown-row">
+              <span><strong>{features.length}</strong> elements</span>
+              <span>•</span>
+              <span><strong>{lineCount}</strong> lines</span>
+              <span>•</span>
+              <span><strong>{zoneCount}</strong> zones</span>
+            </div>
+          </section>
 
-          <div className="comparison-grid">
-            <div className="comparison-col robot-col">
-              <div className="comp-header">
-                <Bot size={15} className="comp-icon" />
-                <span>10Lines Robot</span>
+          {/* 10Lines Autonomous Estimator Card */}
+          <section className="nordic-card estimator-card">
+            <div className="estimator-header">
+              <div className="estimator-title-group">
+                <Zap size={13} style={{ color: 'var(--accent-lichen)' }} />
+                <span className="estimator-title">10Lines Estimator</span>
               </div>
-              <div className="comp-value">{formatDuration(robotMinutes)}</div>
-              <div className="comp-rate">@ 1.0 m/s autonomous</div>
+              {totalLengthMeters > 0 && (
+                <span className="estimator-speedup-tag">~{timeSavedPercent}% Faster</span>
+              )}
             </div>
 
-            <div className="comparison-divider" />
-
-            <div className="comparison-col manual-col">
-              <div className="comp-header">
-                <UserCheck size={15} className="comp-icon" />
-                <span>Manual Crew</span>
+            <div className="estimator-matrix">
+              <div className="matrix-col">
+                <span className="matrix-label robot-label">
+                  <Bot size={13} />
+                  <span>10Lines Robot</span>
+                </span>
+                <span className="matrix-time tabular-nums">{formatDuration(robotMinutes)}</span>
+                <span className="matrix-rate">@ 1.0 m/s autonomous</span>
               </div>
-              <div className="comp-value">{formatDuration(manualMinutes)}</div>
-              <div className="comp-rate">@ 0.2 m/s manual</div>
-            </div>
-          </div>
-        </section>
 
-        {/* Elements Inventory Section */}
-        <section className="inventory-section">
-          <div className="inventory-header">
-            <h3 className="section-title">
-              Drawn Elements ({features.length})
-            </h3>
-            {features.length > 0 && (
-              <span className="click-hint">Click to inspect</span>
-            )}
-          </div>
+              <div className="matrix-divider" />
 
-          {features.length === 0 ? (
-            <div className="empty-inventory">
-              <div className="empty-icon-circle">
-                <PenTool size={22} />
+              <div className="matrix-col">
+                <span className="matrix-label">
+                  <UserCheck size={13} />
+                  <span>Manual Crew</span>
+                </span>
+                <span className="matrix-time tabular-nums">{formatDuration(manualMinutes)}</span>
+                <span className="matrix-rate">@ 0.2 m/s manual</span>
               </div>
-              <p className="empty-title">No elements drawn yet</p>
-              <p className="empty-desc">
-                Select <strong>Draw Line</strong> (L) or <strong>Draw Zone</strong> (P) in the toolbar
-                to begin marking layout segments directly on satellite imagery.
-              </p>
             </div>
-          ) : (
-            <ul className="elements-list" role="list">
-              {features.map((feature, idx) => {
-                const isSelected = selectedFeatureId === feature.id;
-                const isLine = feature.type === 'LineString';
+          </section>
 
-                return (
-                  <li
-                    key={feature.id}
-                    className={`element-item ${isSelected ? 'selected' : ''}`}
-                    onClick={() => setSelectedFeatureId(isSelected ? null : feature.id)}
-                  >
-                    <div className="element-icon-wrapper">
-                      {isLine ? <PenTool size={14} /> : <Square size={14} />}
-                    </div>
+          {/* Elements Inventory */}
+          <section>
+            <div className="inventory-section-header">
+              <span className="inventory-title">Elements ({features.length})</span>
+            </div>
 
-                    <div className="element-details">
-                      <div className="element-name-row">
-                        <span className="element-name">
-                          {feature.label || `${isLine ? 'Line' : 'Zone'} #${idx + 1}`}
-                        </span>
-                        <span className="element-type-badge">
-                          {isLine ? 'Line' : 'Zone'}
+            {features.length === 0 ? (
+              <div className="inventory-empty-card">
+                <PenTool size={18} style={{ color: 'var(--text-muted)' }} />
+                <p className="empty-guide-text">
+                  Press <strong>L</strong> to draw stall lines or <strong>P</strong> for zones on the aerial canvas.
+                </p>
+              </div>
+            ) : (
+              <ul className="inventory-items-list" role="list">
+                {features.map((feature, idx) => {
+                  const isSelected = selectedFeatureId === feature.id;
+                  const isLine = feature.type === 'LineString';
+
+                  return (
+                    <li
+                      key={feature.id}
+                      className={`inventory-row ${isSelected ? 'selected' : ''}`}
+                      onClick={() => setSelectedFeatureId(isSelected ? null : feature.id)}
+                    >
+                      <div className="row-icon">
+                        {isLine ? <PenTool size={13} /> : <Square size={13} />}
+                      </div>
+
+                      <div className="row-meta">
+                        <div className="row-top-line">
+                          <span className="row-name">
+                            {feature.label || `${isLine ? 'Line' : 'Zone'} #${idx + 1}`}
+                          </span>
+                          <span className="row-type-tag">{isLine ? 'Line' : 'Zone'}</span>
+                        </div>
+                        <span className="row-length tabular-nums">
+                          {formatMeters(feature.lengthMeters)}
                         </span>
                       </div>
-                      <span className="element-metric">
-                        {formatMeters(feature.lengthMeters)}
-                      </span>
-                    </div>
 
-                    <button
-                      type="button"
-                      className="element-delete-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deleteFeature(feature.id);
-                      }}
-                      title="Delete this element"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </section>
+                      <button
+                        type="button"
+                        className="row-trash-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteFeature(feature.id);
+                        }}
+                        title="Delete this element"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
 
-        {/* Export Actions Section */}
-        <section className="export-section">
-          <h3 className="section-title">Export Plan</h3>
-          <div className="export-buttons-stack">
+          {/* Direct Export Stack */}
+          <section className="export-stack">
             <button
               type="button"
-              className="export-panel-btn geojson-btn"
+              className="nordic-export-btn"
               onClick={handleExportGeoJSON}
               disabled={features.length === 0}
-              title="Export valid RFC 7946 GeoJSON in WGS84 coordinates"
+              title="Export RFC 7946 GeoJSON in WGS84"
             >
-              <Download size={16} />
-              <div className="btn-text-block">
-                <span className="btn-main-text">Export GeoJSON</span>
-                <span className="btn-sub-text">RFC 7946 (EPSG:4326) standard</span>
+              <Download size={15} style={{ color: 'var(--accent-arctic-light)' }} />
+              <div className="export-btn-label-block">
+                <span className="export-primary-text">Export GeoJSON</span>
+                <span className="export-secondary-text">RFC 7946 (EPSG:4326)</span>
               </div>
-              <ChevronRight size={16} className="btn-arrow" />
             </button>
 
             <button
               type="button"
-              className="export-panel-btn csv-btn"
+              className="nordic-export-btn"
               onClick={handleExportCSV}
               disabled={features.length === 0}
-              title="Export CSV table with individual segments and total"
+              title="Export tabular CSV summary"
             >
-              <FileSpreadsheet size={16} />
-              <div className="btn-text-block">
-                <span className="btn-main-text">Export CSV Spreadsheet</span>
-                <span className="btn-sub-text">Segment lengths & cumulative total</span>
+              <FileSpreadsheet size={15} style={{ color: 'var(--accent-lichen)' }} />
+              <div className="export-btn-label-block">
+                <span className="export-primary-text">Export CSV</span>
+                <span className="export-secondary-text">Per-segment lengths & total</span>
               </div>
-              <ChevronRight size={16} className="btn-arrow" />
             </button>
-          </div>
-        </section>
-      </div>
-
-      {/* Legal & Technical Footer */}
-      <footer className="panel-footer">
-        <div className="attribution-row">
-          <Info size={12} className="info-icon" />
-          <p className="attribution-text">
-            <strong>Esri World Imagery:</strong> Tiles © Esri — Source: Esri, i-cubed, USDA, USGS, AEX,
-            GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community.
-          </p>
+          </section>
         </div>
-      </footer>
-    </aside>
+
+        {/* Legal & Attribution Footer */}
+        <footer className="panel-footer-legal">
+          <p className="legal-copy">
+            Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community.
+          </p>
+        </footer>
+      </aside>
+    </>
   );
 };
