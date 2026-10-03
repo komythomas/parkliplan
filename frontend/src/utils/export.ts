@@ -25,7 +25,7 @@ export function sanitizeFilename(name: string): string {
     .toLowerCase()
     .trim()
     .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '') || 'parkliplan';
+    .replace(/^-+|-+$/g, '') || 'parkkiplan';
 }
 
 /**

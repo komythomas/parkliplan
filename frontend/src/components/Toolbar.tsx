@@ -118,7 +118,7 @@ export const Toolbar: React.FC = () => {
       {/* Left: Brand, Plan Name & Location Search */}
       <div className="header-zone-left">
         <div className="brand-badge">
-          <span className="brand-name">Parkliplan</span>
+          <span className="brand-name">Parkkiplan</span>
         </div>
 
         <div className="plan-name-container">

@@ -1,4 +1,4 @@
-# Parkliplan
+# Parkkiplan
 
 **Interactive Geospatial Planning & Measurement Engine for Autonomous Pavement Striping**
 
@@ -15,7 +15,7 @@
 
 | Service | URL |
 |:---|:---|
-| **Frontend (Vercel)** | [https://frontend-pied-iota-98.vercel.app](https://frontend-pied-iota-98.vercel.app) |
+| **Frontend (Vercel)** | [https://parkkiplan.vercel.app](https://parkkiplan.vercel.app) |
 | **Backend API (Fly.io)** | [https://parkliplan-api.fly.dev](https://parkliplan-api.fly.dev) |
 | **Interactive API Docs (Swagger)** | [https://parkliplan-api.fly.dev/docs](https://parkliplan-api.fly.dev/docs) |
 | **API Health** | [https://parkliplan-api.fly.dev/health](https://parkliplan-api.fly.dev/health) |
@@ -43,10 +43,10 @@
 
 Autonomous pavement striping robots (such as those pioneered by **10Lines OÜ**) replace manual chalking and tape measurement with autonomous, electric precision marking. However, autonomous field deployments require exact, machine-readable geospatial layouts generated over real-world asphalt coordinates.
 
-**Parkliplan** is a lightweight, web-native spatial layout editor engineered for striping contractors, estimators, and robotic fleet planners. It allows operators to design stall lines, safety bays, and boundaries directly over high-resolution aerial imagery, calculate distortion-free linear metrics, and export compliant geometries for robotic trajectory planners.
+**Parkkiplan** is a lightweight, web-native spatial layout editor engineered for striping contractors, estimators, and robotic fleet planners. It allows operators to design stall lines, safety bays, and boundaries directly over high-resolution aerial imagery, calculate distortion-free linear metrics, and export compliant geometries for robotic trajectory planners.
 
-![Parkliplan Workspace Preview](./docs/screenshots/03-line-drawn-metrics.png)
-*Live preview of the Parkliplan canvas: high-resolution Esri aerial imagery, real-time WGS84 geodesic metrology, and parking line budget estimator.*
+![Parkkiplan Workspace Preview](./docs/screenshots/03-line-drawn-metrics.png)
+*Live preview of the Parkkiplan canvas: high-resolution Esri aerial imagery, real-time WGS84 geodesic metrology, and parking line budget estimator.*
 
 ---
 
@@ -86,7 +86,7 @@ $$k = \frac{1}{\cos(59.437^\circ)} \approx 1.967$$
 
 A standard 5.0-meter parking stall line naively measured in Cartesian Web Mercator coordinates results in $\approx 9.83$ units—an error of **+96.7%**.
 
-Parkliplan eliminates this distortion by calculating all lengths via spherical great-circle integration (`ol/sphere.getLength`). The spherical model deviates from the WGS84 ellipsoid by less than 0.5 % for the short segments typical in parking-lot planning — well within the accuracy limits of clicking on satellite imagery (typically ±20–50 cm depending on zoom level).
+Parkkiplan eliminates this distortion by calculating all lengths via spherical great-circle integration (`ol/sphere.getLength`). The spherical model deviates from the WGS84 ellipsoid by less than 0.5 % for the short segments typical in parking-lot planning — well within the accuracy limits of clicking on satellite imagery (typically ±20–50 cm depending on zoom level).
 
 ---
 
@@ -152,7 +152,7 @@ The frontend is designed to be deployed on Vercel with the backend API proxied t
 
 ## Keyboard Navigation
 
-To accelerate spatial drawing on site, Parkliplan supports single-key tool activation:
+To accelerate spatial drawing on site, Parkkiplan supports single-key tool activation:
 
 | Key | Mode | Operational Purpose |
 |:---:|:---|:---|
@@ -221,14 +221,14 @@ Browser
 Detailed technical design notes and data contracts are documented in the [`docs/`](docs/) directory:
 
 - [**`docs/GEODESICS.md`**](docs/GEODESICS.md): In-depth physical derivation of Web Mercator distortion ($k = \sec\phi$), comparison table across European/Nordic latitudes, and WGS84 great-circle spherical integration implementation.
-- [**`docs/ROBOTIC_SPEC.md`**](docs/ROBOTIC_SPEC.md): Hypothetical design notes describing how Parkliplan GeoJSON exports could be consumed by an autonomous striping robot — RFC 7946 schema, ENU local frame projection, and trajectory generation pipeline. Not based on internal documentation from any company.
+- [**`docs/ROBOTIC_SPEC.md`**](docs/ROBOTIC_SPEC.md): Hypothetical design notes describing how Parkkiplan GeoJSON exports could be consumed by an autonomous striping robot — RFC 7946 schema, ENU local frame projection, and trajectory generation pipeline. Not based on internal documentation from any company.
 - [**`docs/screenshots/`**](docs/screenshots/): Full-resolution visual test scans of the live interface and metrology readouts.
 
 ---
 
 ## Automated Verification Suite
 
-Parkliplan maintains automated verification covering both frontend spatial math and backend data integrity.
+Parkkiplan maintains automated verification covering both frontend spatial math and backend data integrity.
 
 ### 1. Frontend Unit & Precision Tests (Vitest)
 
@@ -284,5 +284,5 @@ Full interactive documentation: [https://parkliplan-api.fly.dev/docs](https://pa
 
 ### Trademark & Fair Use Notice
 - **10Lines** is the name of a company (10Lines OÜ). All company names and product names cited in this repository are the property of their respective owners.
-- Parkliplan is an independent technical demonstration and portfolio project developed by [@komythomas](https://github.com/komythomas) to demonstrate web-GIS spatial planning, spherical geodesic calculation, and autonomous striping path generation.
+- Parkkiplan is an independent technical demonstration and portfolio project developed by [@komythomas](https://github.com/komythomas) to demonstrate web-GIS spatial planning, spherical geodesic calculation, and autonomous striping path generation.
 - This software is not an official product of, nor is it endorsed by, affiliated with, or sponsored by 10Lines OÜ or the Norway Grants Green ICT programme.

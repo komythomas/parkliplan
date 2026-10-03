@@ -6,7 +6,7 @@ A critical failure point in naive web-GIS applications is the direct measurement
 
 At the latitude of **Tallinn, Estonia ($59.437^\circ\text{ N}$)**—the operational home base of autonomous striping companies like **10Lines OÜ**—naive planar distance measurements result in a **$+96.7\%$ scale inflation**. A real-world $5.00\text{ m}$ parking stall divider measures $\approx 9.83\text{ m}$ on the projected plane.
 
-**Parkliplan** implements real-time spherical geodesic integration via `ol/sphere.getLength`, computing physical ground distance on a sphere of radius $R = 6{,}371{,}008.8\text{ m}$. This eliminates the Mercator scale error entirely. The deviation between a spherical great-circle calculation and a true WGS84 ellipsoidal calculation is less than **0.5 %** for the segment lengths encountered in parking lot planning — well within the accuracy limits imposed by satellite imagery resolution and mouse-click precision.
+**Parkkiplan** implements real-time spherical geodesic integration via `ol/sphere.getLength`, computing physical ground distance on a sphere of radius $R = 6{,}371{,}008.8\text{ m}$. This eliminates the Mercator scale error entirely. The deviation between a spherical great-circle calculation and a true WGS84 ellipsoidal calculation is less than **0.5 %** for the segment lengths encountered in parking lot planning — well within the accuracy limits imposed by satellite imagery resolution and mouse-click precision.
 
 ---
 
@@ -39,7 +39,7 @@ Where:
 
 ## 2. Geodesic Calculation Engine
 
-Parkliplan calculates distances using great-circle integration over a sphere of radius $R = 6{,}371{,}008.8\text{ m}$ (the mean radius used by OpenLayers `ol/sphere`).
+Parkkiplan calculates distances using great-circle integration over a sphere of radius $R = 6{,}371{,}008.8\text{ m}$ (the mean radius used by OpenLayers `ol/sphere`).
 
 > **Note on precision**: `ol/sphere.getLength` uses a spherical model, not the WGS84 ellipsoid. For the short segment lengths typical in parking-lot planning (5–100 m), the spherical approximation differs from a rigorous ellipsoidal calculation by less than 0.5 %. This is negligible compared to the positional uncertainty introduced by clicking on satellite imagery, which is typically 20–50 cm or more.
 
@@ -59,7 +59,7 @@ $$d_{\text{total}} = \sum_{i=1}^{N-1} d(P_i, P_{i+1})$$
 
 ---
 
-## 3. Implementation in Parkliplan (`metrics.ts`)
+## 3. Implementation in Parkkiplan (`metrics.ts`)
 
 ```typescript
 import { getLength } from 'ol/sphere';
@@ -87,7 +87,7 @@ export function calculateGeodesicLength(geometry: Geometry): number {
 
 ## 4. Automated Verification Test Suite
 
-Parkliplan enforces this precision through automated Vitest tests ([`metrics.test.ts`](file:///e:/Projects/parkliplan/frontend/tests/metrics.test.ts)):
+Parkkiplan enforces this precision through automated Vitest tests ([`metrics.test.ts`](file:///e:/Projects/parkliplan/frontend/tests/metrics.test.ts)):
 
 ```typescript
 it('correctly calculates ground-truth distance at high latitude (Tallinn 59.4°N) avoiding Mercator inflation', () => {

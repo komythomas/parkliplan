@@ -1,5 +1,5 @@
 /**
- * API client for interacting with the Parkliplan FastAPI backend.
+ * API client for interacting with the Parkkiplan FastAPI backend.
  */
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';

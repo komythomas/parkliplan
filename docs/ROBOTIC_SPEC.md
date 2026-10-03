@@ -1,6 +1,6 @@
 # Autonomous Striping Robotics — GeoJSON Ingestion Specification
 
-> **Hypothetical design notes.** This document describes a plausible GeoJSON ingestion pipeline for an autonomous pavement-marking robot and is intended to illustrate how Parkliplan exports could be consumed by such a system. It is not based on internal documentation from 10Lines OÜ or any other company, and it does not describe the actual behaviour of any real product.
+> **Hypothetical design notes.** This document describes a plausible GeoJSON ingestion pipeline for an autonomous pavement-marking robot and is intended to illustrate how Parkkiplan exports could be consumed by such a system. It is not based on internal documentation from 10Lines OÜ or any other company, and it does not describe the actual behaviour of any real product.
 
 ---
 
@@ -8,7 +8,7 @@
 
 Autonomous pavement marking robots execute line striping by converting vector plans into localized physical trajectory waypoints. A typical system relies on RTK-GNSS centimeter-level positioning, IMUs, and wheel encoders to follow designed paths.
 
-**Parkliplan** outputs standardized **RFC 7946 GeoJSON FeatureCollections** suited for autonomous mission planning software. This document describes a hypothetical data contract between Parkliplan exports and a robotic vehicle control system.
+**Parkkiplan** outputs standardized **RFC 7946 GeoJSON FeatureCollections** suited for autonomous mission planning software. This document describes a hypothetical data contract between Parkkiplan exports and a robotic vehicle control system.
 
 ---
 
@@ -26,7 +26,7 @@ Autonomous pavement marking robots execute line striping by converting vector pl
 
 ## 3. Feature Schema Definition
 
-Each geometric element exported from Parkliplan carries operational metadata in its `properties` block:
+Each geometric element exported from Parkkiplan carries operational metadata in its `properties` block:
 
 ### Common Properties Schema
 
@@ -108,10 +108,10 @@ interface RoboticFeatureProperties {
 
 ## 5. Hypothetical Trajectory Generation Pipeline
 
-The following pipeline illustrates how a robot might consume Parkliplan GeoJSON. Implementation details would vary by platform.
+The following pipeline illustrates how a robot might consume Parkkiplan GeoJSON. Implementation details would vary by platform.
 
 ```
-[Parkliplan GeoJSON (WGS84)]
+[Parkkiplan GeoJSON (WGS84)]
             │
             ▼
 [Local Frame Projection (ENU / Tangent Plane)]

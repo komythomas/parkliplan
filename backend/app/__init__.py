@@ -1,1 +1,1 @@
-"""Parkliplan Backend Application Package."""
+"""Parkkiplan Backend Application Package."""

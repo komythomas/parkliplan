@@ -1,5 +1,5 @@
 /**
- * Core type definitions for Parkliplan spatial planning engine.
+ * Core type definitions for Parkkiplan spatial planning engine.
  */
 
 export type BasemapType = 'satellite' | 'osm';

@@ -1,4 +1,4 @@
-"""Parkliplan FastAPI Entry Point."""
+"""Parkkiplan FastAPI Entry Point."""
 from contextlib import asynccontextmanager
 import uuid
 from typing import List
@@ -33,7 +33,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Parkliplan API",
+    title="Parkkiplan API",
     description="Geospatial Pavement Line Marking and Layout Planning API",
     version="1.0.0",
     lifespan=lifespan,

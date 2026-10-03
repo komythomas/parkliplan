@@ -1,4 +1,4 @@
-"""Asynchronous SQLite Database Engine for Parkliplan."""
+"""Asynchronous SQLite Database Engine for Parkkiplan."""
 import aiosqlite
 import json
 import os

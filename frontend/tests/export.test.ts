@@ -82,7 +82,7 @@ describe('Direct Export Engine Tests (CAP-5 & Stories #4, #6)', () => {
 
   it('sanitizes plan names safely for file exports', () => {
     expect(sanitizeFilename('Tallinn Logistics Bay Layout #1!')).toBe('tallinn-logistics-bay-layout-1');
-    expect(sanitizeFilename('   ')).toBe('parkliplan');
+    expect(sanitizeFilename('   ')).toBe('parkkiplan');
     expect(sanitizeFilename('Parking-Area_2026')).toBe('parking-area-2026');
   });
 });
